@@ -1,23 +1,38 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { authenticateUser } from "../../utils/auth";
+import { useSelector, useDispatch } from "react-redux";
+import { clearAlert, setAlert } from "@/redux/alert/alertSlice";
 import Link from "next/link";
 
 export default function SignUp() {
   const router = useRouter();
   const [formErrors, setFormErrors] = useState({});
+  const isLoggedIn = useSelector((state) => state.auth.isLoggedIn)
+  const dispatch = useDispatch();
 
+  useEffect(()=>{
+    if (isLoggedIn) {
+      router.push('/')
+      dispatch(setAlert({message: 'Already logged in', type: "alert-warning" }))
+      setTimeout(() => {
+        dispatch(clearAlert());
+      }, 3000)
+
+    }
+  },[isLoggedIn])
+  
   function postSignUp() {
     router.push('/');
-  };
+  }
 
   async function createUser(evt) {
     evt.preventDefault();
 
     if (evt.target["password"].value !== evt.target["password-confirmation"].value) {
       setFormErrors({
-        password: "Password confirmation does not match",
+        passwordConfirm: "Password confirmation does not match",
       });
       return;
     }
@@ -43,30 +58,34 @@ export default function SignUp() {
     );
 
     if (resp.status === 200) {
-        const res = await authenticateUser(userData.username, userData.password);
+      const res = await authenticateUser(userData.username, userData.password);
 
-        if (res.success){
-            postSignUp();
-        } else {
-            throw 'Sign up succeeded but authentication failed';
-        }
+      if (res.success) {
+        postSignUp();
+        dispatch(setAlert({message: "Sign up successful", type: "alert-success"}))
+      } else {
+        throw 'Sign up succeeded but authentication failed';
+      }
     } else {
       const res = await resp.json();
-      let newFormErrors = res.data; 
-      setFormErrors(newFormErrors);
+      setFormErrors(res.data);
+      dispatch(setAlert({message: "Failed to sign up", type: "alert-warning"}));
+        setTimeout(() => {
+          dispatch(clearAlert());
+        }, 3000)
     }
   }
 
   return (
-    <div>
-      <h1 className="text-center text-xl">Create an Account to Post a Job</h1>
-      <div className="text-center">
+    <div className="mx-auto my-10 bg-neutral rounded-box max-w-lg py-10 ease-in duration-200 shadow-2xl">
+      <div className="prose mx-auto text-center">
+        <h1 className="text-xl">Create an Account to Post a Job</h1>
         <Link className="link-hover italic text-xs" href="/login">
           Already have an account? Click here to login instead.
         </Link>
       </div>
       <div className="flex justify-center items-center mt-8">
-        <form onSubmit={createUser} className="w-1/3">
+        <form onSubmit={createUser} className="w-full mx-10">
           <div className="form-control w-full">
             <label className="label" htmlFor="username">
               <span className="label-text">Username</span>
@@ -76,11 +95,12 @@ export default function SignUp() {
               name="username"
               placeholder="johndoe"
               className="input input-bordered w-full"
+              required
             />
-            {formErrors["username"] && (
-              <label className="label" htmlFor="username">
+            {formErrors.username && (
+              <label className="label">
                 <span className="label-text-alt text-red-500">
-                  {formErrors["username"]}
+                  {formErrors.username.message}
                 </span>
               </label>
             )}
@@ -97,10 +117,10 @@ export default function SignUp() {
               className="input input-bordered w-full"
               required
             />
-            {formErrors["email"] && (
-              <label className="label" htmlFor="email">
+            {formErrors.email && (
+              <label className="label">
                 <span className="label-text-alt text-red-500">
-                  {formErrors["email"]}
+                  {formErrors.email.message}
                 </span>
               </label>
             )}
@@ -117,30 +137,30 @@ export default function SignUp() {
               className="input input-bordered w-full"
               required
             />
-            {formErrors["password"] && (
-              <label className="label" htmlFor="password">
+            {formErrors.password && (
+              <label className="label">
                 <span className="label-text-alt text-red-500">
-                  {formErrors["password"]}
+                  {formErrors.password.message}
                 </span>
               </label>
             )}
           </div>
 
           <div className="form-control w-full">
-            <label className="label" htmlFor="password">
+            <label className="label" htmlFor="password-confirmation">
               <span className="label-text">Confirm Password</span>
             </label>
             <input
               type="password"
               name="password-confirmation"
-              placeholder=""
+              placeholder="Confirm password"
               className="input input-bordered w-full"
               required
             />
-            {formErrors["password"] && (
-              <label className="label" htmlFor="password">
+            {formErrors.passwordConfirm && (
+              <label className="label">
                 <span className="label-text-alt text-red-500">
-                  {formErrors["password"]}
+                  {formErrors.passwordConfirm}
                 </span>
               </label>
             )}

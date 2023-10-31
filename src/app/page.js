@@ -36,28 +36,24 @@ export default function App() {
 
   return (
     <div>
-      <h1 className="text-center text-xl font-bold">Find Your Next Job</h1>
+      <h1 className="text-center text-xl font-bold display-flex align-middle">Find Your Next Job</h1>
       <div className="overflow-x-auto w-full">
         {data.jobs.map((job) => (
-          <div className="flex flex-col mt-10" key={job.id}>
+          <div className="flex flex-col mt-10 ml-5 mr-5" key={job.id}>
             <div>
-              <a className="font-bold text-2xl" href={`/jobs/${job.id}`}>
-                {job.title}
-              </a>
+              <a className="font-bold text-2xl" href={`/jobs/${job.id}`}>{job.title}</a>
               <div className="text-sm mt-1">
                 {job.employer} . {job.location} .{" "}
                 <span className="text-sm">
-                  USD {job.minAnnualCompensation} - USD{" "}
-                  {job.maxAnnualCompensation}
+                  USD {job.minAnnualCompensation} - USD {job.maxAnnualCompensation}
                 </span>
               </div>
               <div className="italic text-xs opacity-50 mt-2">
-                posted{" "}
-                {new Date(job.created).toLocaleDateString(undefined, {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
+                posted {new Date(job.created).toLocaleDateString(undefined, {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
                 })}
               </div>
             </div>

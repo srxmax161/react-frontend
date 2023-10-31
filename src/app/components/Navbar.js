@@ -3,6 +3,7 @@
 import { useSelector } from "react-redux";
 import { isValidToken, logOut } from "@/utils/auth";
 import { useEffect } from "react";
+import ThemeChange from "./ThemeChange";
 import Link from "next/link";
 
 const Navbar = () => {
@@ -19,6 +20,7 @@ const Navbar = () => {
       </Link>
       <ul className="flex justify-evenly px-5">
         <li className="flex items-center">
+          <ThemeChange />
           {isLoggedIn ? (
             <div>
             <Link href="/upload-jobs" className="btn btn-ghost p-4 ">

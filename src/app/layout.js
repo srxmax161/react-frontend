@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import ReduxProvider from "../redux/ReduxProvider";
 import Navbar from "./components/Navbar";
+import Alert from "./components/Alerts";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,6 +17,7 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <ReduxProvider>
           <Navbar />
+          <Alert />
           {children}
         </ReduxProvider>
       </body>

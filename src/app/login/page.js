@@ -1,14 +1,27 @@
 "use client"
 import { authenticateUser } from "@/utils/auth";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { clearAlert, setAlert } from "@/redux/alert/alertSlice";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function logIn(){
     const router = useRouter();
+    const dispatch = useDispatch();
     const [formErrors, setFormErrors] = useState({});
+    const isLoggedIn = useSelector((state)=> state.auth.isLoggedIn)
 
+    useEffect(()=>{
+      if(isLoggedIn){
+        router.push('/')
+        dispatch(setAlert({message: "Already logged in", type: "alert-warning"}));
+        setTimeout(() => {
+            dispatch(clearAlert());
+        }, 3000)
+      }
+    },[isLoggedIn]);
 
-function postLogIn(){
+function logIn(){
     router.push('/');
 };
 
@@ -20,11 +33,24 @@ async function userLogIn(evt) {
     };
 
     const res = await authenticateUser(userData.username, userData.password);
+    console.log(res);
 
     if(res.success){
-        postLogIn();
-    } else {
-        setFormErrors(res.res.error);
+        logIn()
+        dispatch(setAlert({message: "Login successful!", type: "alert-success"}))
+        setTimeout(() => {
+            dispatch(clearAlert());
+        }, 3000)
+    } else { 
+        const newFormErrors = {
+            username: res.res.message || "",
+            password: res.res.message || "",
+          };
+          setFormErrors(newFormErrors);
+          dispatch(setAlert({ message: res.res.message, type: "alert-error" }));
+          setTimeout(() => {
+            dispatch(clearAlert());
+          }, 3000)
     }
 }
 
@@ -44,6 +70,7 @@ return (
               name="username"
               placeholder="johndoe"
               className="input input-bordered w-full"
+              required
             />
             {formErrors["username"] && (
               <label className="label" htmlFor="username">

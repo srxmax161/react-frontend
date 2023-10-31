@@ -1,82 +1,106 @@
 "use client"
+
 import { useRouter } from "next/navigation";
-import { getUserId } from "../../utils/auth";
+import { getUserId, getTokenFromLocalStorage } from "@/utils/auth";
 import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { clearAlert, setAlert } from "@/redux/alert/alertSlice";
+import { useDispatch } from "react-redux";
 
-export default function postJobs() {
-    const router = useRouter();
-    const [formErrors, setFormErrors] = useState({});
-    const dispatch = useDispatch();
-    const isLoggedIn = useSelector((state) => state.auth.isLoggedIn)
+const updateJobs = ({ params }) => {
+  const [data, setData] = useState({ job: {
+    title: '',
+      minAnnualCompensation: '',
+      maxAnnualCompensation: '',
+      employer: '',
+      location: '',
+      description: '',
+      requirements: '',
+      applicationInstructions: ''
+  } });
+  const [formErrors, setFormErrors] = useState([])
+  const router = useRouter()
+  const dispatch = useDispatch()
 
-    useEffect(()=>{
-        if (!isLoggedIn) {
-          router.push('/login')
-          dispatch(setAlert({message: 'Please login', type: "alert-error" }))
+  function afterUpdateJobs(){
+    router.push(`/jobs/${data.job.id}`)
+  }
+
+  async function userUpdateJob(evt) {
+    evt.preventDefault();
+
+    const jobData = {
+      user: getUserId(),
+      title: evt.target["title"].value,
+      minAnnualCompensation: evt.target["minAnnualCompensation"].value,
+      maxAnnualCompensation: evt.target["maxAnnualCompensation"].value,
+      employer: evt.target["employer"].value,
+      location: evt.target["location"].value,
+      description: evt.target["description"].value,
+      requirements: evt.target["requirements"].value,
+      applicationInstructions: evt.target["applicationInstructions"].value
+    };
+
+    const resp = await fetch(process.env.NEXT_PUBLIC_BACKEND_BASE_URL +
+      `/api/collections/jobs/records/${params.slug}`,
+      {
+        method: "PATCH",
+        mode: "cors",
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': getTokenFromLocalStorage()
+        },
+        body: JSON.stringify(jobData),
+      })
+
+        if(resp.status === 200){
+          afterUpdateJobs()
+          dispatch(setAlert({message: "Job updated successfully", type: "alert-success"}));
           setTimeout(() => {
             dispatch(clearAlert());
           }, 3000)
-    
-        }
-      },[isLoggedIn])
-
-    function afterPostJob() {
-        router.push('/');
-    };
-
-    async function userPostJob(evt) {
-        evt.preventDefault();
-
-        const userId = getUserId();
-
-        const jobData = {
-            user: userId,
-            title: evt.target["title"].value,
-            minAnnualCompensation: evt.target["minAnnualCompensation"].value,
-            maxAnnualCompensation: evt.target["maxAnnualCompensation"].value,
-            employer: evt.target["employer"].value,
-            location: evt.target["location"].value,
-            description: evt.target["description"].value,
-            requirements: evt.target["requirements"].value,
-            applicationInstructions: evt.target["applicationInstructions"].value
-        };
-
-        const resp = await fetch(process.env.NEXT_PUBLIC_BACKEND_BASE_URL +
-            "/api/collections/jobs/records",
-            {
-                method: "POST",
-                mode: "cors",
-                headers: {
-                    'Content-type': 'application/json',
-            },
-            body: JSON.stringify(jobData),
-            }
-        );
-
-        if (resp.status == 200) {
-            afterPostJob();
-            dispatch(setAlert({message: "Job created successfully", type: "alert-success"}));
-            setTimeout(() => {
-              dispatch(clearAlert());
-            }, 3000)
         } else {
-            const res = await resp.json();
-            const newFormErrors = res.data; 
-            setFormErrors(newFormErrors);
-            dispatch(setAlert({message: "Failed to create job", type: "alert-warning"}));
-            setTimeout(() => {
-              dispatch(clearAlert());
-            }, 3000)
+          const res = await resp.json();
+          const newFormErrors = res.data;
+          setFormErrors(newFormErrors);
+          dispatch(setAlert({message: "Failed to update job", type: "alert-warning"}));
+          setTimeout(() => {
+            dispatch(clearAlert());
+          }, 3000)
+        };
+      }
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const resp = await fetch(process.env.NEXT_PUBLIC_BACKEND_BASE_URL + `/api/collections/jobs/records/${params.slug}`);
+        console.log(resp)
+
+          const res = await resp.json();
+          if (resp.status === 200) {
+            if(res.user !=getUserId()){
+              router.push(`/`)
+              dispatch(setAlert({message: "Not job creater", type: "alert-error"}));
+              setTimeout(() => {
+                dispatch(clearAlert());
+              }, 3000)
+            }
+
+          setData({ job: res });
+        } else {
+          setData({ job: {} });
         }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        // Handle error logic here if needed
+      }
     }
 
-    return(
+    fetchData();
+  }, [params.slug]);
 
-        <div>
+  return(
+    <div>
             <h1 className="text-center text-3xl font-bold display-flex align-middle">Post a Job</h1>
-                <form onSubmit={userPostJob} className="w-full left px-36">
+                <form onSubmit={userUpdateJob} className="w-full left px-36">
                     <div className="form-control mt-5">
                         <label className="label" htmlFor="title">
                             <span className="label-text">Job Title</span>
@@ -84,7 +108,8 @@ export default function postJobs() {
                             <input
                             type="text"
                             name="title"
-                            placeholder="Please input your job title"
+                            value = {data.job.title}
+                            onChange={(e) => setData({ job: { ...data.job, title: e.target.value } })}
                             className="input input-bordered w-full"
                             required
                             />
@@ -104,8 +129,9 @@ export default function postJobs() {
                             <input
                             type="text"
                             name="minAnnualCompensation"
-                            placeholder="Please input the minimum compensation"
+                            value={data.job.minAnnualCompensation}
                             className='input input-bordered w-full'
+                            onChange={(e) => setData({ job: { ...data.job, minAnnualCompensation: e.target.value } })}
                             required
                             />
                             {formErrors.minAnnualCompensation && (
@@ -124,8 +150,9 @@ export default function postJobs() {
                             <input
                             type="text"
                             name="maxAnnualCompensation"
-                            placeholder="Please input the maximum compensation"
                             className="input input-bordered w-full"
+                            value= {data.job.maxAnnualCompensation}
+                            onChange={(e) => setData({ job: { ...data.job, maxAnnualCompensation: e.target.value } })}
                             required
                             />
                              {formErrors.maxAnnualCompensation && (
@@ -139,12 +166,13 @@ export default function postJobs() {
 
                     <div className="form-control mt-5">
                         <label className="label" htmlFor="employer">
-                            <span className="label-text">Company Name</span>
+                            <span className="label-text">Company Name</span>0
                             </label>
                             <input
                             type="text"
                             name="employer"
-                            placeholder="Please input your company name"
+                            value={data.job.employer}
+                            onChange={(e) => setData({ job: { ...data.job, employer: e.target.value } })}
                             className="input input-bordered w-full"
                             required
                             />
@@ -165,7 +193,8 @@ export default function postJobs() {
                             <input
                             type="text"
                             name="location"
-                            placeholder="Please input your job location"
+                            value={data.job.location}
+                            onChange={(e) => setData({ job: { ...data.job, location: e.target.value } })}                            
                             className="input input-bordered w-full"
                             required
                             />
@@ -185,7 +214,8 @@ export default function postJobs() {
                             <input
                             type="text"
                             name="description"
-                            placeholder="Please input your job description"
+                            value={data.job.description}
+                            onChange={(e) => setData({ job: { ...data.job, description: e.target.value } })}
                             className="input input-bordered w-full"
                             required
                             />
@@ -205,7 +235,8 @@ export default function postJobs() {
                             <input
                             type="text"
                             name="requirements"
-                            placeholder="Please input your job requirements"
+                            value={data.job.requirements}
+                            onChange={(e) => setData({ job: { ...data.job, requirements: e.target.value } })}
                             className="input input-bordered w-full"
                             required
                             />
@@ -225,7 +256,8 @@ export default function postJobs() {
                             <input
                             type="text"
                             name="applicationInstructions"
-                            placeholder="Please input your application instructions"
+                            value={data.job.applicationInstructions}
+                            onChange={(e) => setData({ job: { ...data.job, applicationInstructions: e.target.value } })}
                             className="input input-bordered w-full"
                             required
                             />
@@ -238,9 +270,11 @@ export default function postJobs() {
                             )}
                     </div>
                     <div className="form-control w-full px-36 mt-5 mb-5">
-                        <button className="btn text-3xl">POST JOB</button>
+                        <button className="btn text-3xl">UPDATE JOB</button>
                     </div>
                 </form>
         </div>
     )
 }
+
+export default updateJobs;

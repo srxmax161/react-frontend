@@ -1,4 +1,4 @@
-import { login,logout } from "@/redux/slices/loginSlice";
+import { login,logout } from "../redux/auth/loginSlice";
 import store from "@/redux/store";
 
 const emptyAuth = {
@@ -8,6 +8,7 @@ const emptyAuth = {
   
   export function logOut() {
     store.dispatch(logout());
+    
     localStorage.setItem("auth", JSON.stringify(emptyAuth));
     return true;
   }
@@ -57,11 +58,10 @@ const emptyAuth = {
           })
         );
 
-        store.dispatch(login())
-        return true;
+        store.dispatch(login());
       }
-  
-      return false;
+      return true;
+    
     } catch {
       return false;
     }
@@ -95,7 +95,8 @@ const emptyAuth = {
         })
       );
 
-      store.dispatch(login())
+      store.dispatch(login());
+
       return {
         success: true,
         res: res,
